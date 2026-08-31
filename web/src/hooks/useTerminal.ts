@@ -106,6 +106,57 @@ export function useTerminal(
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [hasNewOutput, setHasNewOutput] = useState(false)
   const [searchState, setSearchState] = useState<TerminalSearchState>(initialSearchState)
+  const wheelPartialScrollRef = useRef(0)
+  const handledWheelEventsRef = useRef(new WeakSet<WheelEvent>())
+
+  const resolveWheelSteps = useCallback((term: Terminal, event: WheelEvent) => {
+    if (event.deltaY === 0 || event.shiftKey) return 0
+
+    let amount = event.deltaY
+    if (event.deltaMode === WheelEvent.DOM_DELTA_PIXEL) {
+      const fontSize = Number(term.options.fontSize ?? 13)
+      const lineHeight = Number(term.options.lineHeight ?? 1)
+      const rowHeight = Math.max(1, fontSize * lineHeight)
+      amount /= rowHeight
+      wheelPartialScrollRef.current += amount
+      amount = Math.trunc(wheelPartialScrollRef.current)
+      wheelPartialScrollRef.current -= amount
+    } else if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+      amount *= term.rows
+    }
+
+    return amount
+  }, [])
+
+  const encodeSgrWheel = useCallback((term: Terminal, container: HTMLElement, event: WheelEvent, button: 64 | 65) => {
+    const screen = container.querySelector<HTMLElement>('.xterm-screen') ?? term.element ?? container
+    const rect = screen.getBoundingClientRect()
+    const relativeX = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0
+    const relativeY = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0
+    const col = Math.max(1, Math.min(term.cols || 80, Math.floor(relativeX * (term.cols || 80)) + 1))
+    const row = Math.max(1, Math.min(term.rows || 24, Math.floor(relativeY * (term.rows || 24)) + 1))
+    return `\x1b[<${button};${col};${row}M`
+  }, [])
+
+  const forwardWheelToTmux = useCallback((term: Terminal, container: HTMLElement, event: WheelEvent) => {
+    if (handledWheelEventsRef.current.has(event)) return false
+
+    const steps = resolveWheelSteps(term, event)
+    const socket = wsRef.current
+    if (steps === 0 || !socket || socket.readyState !== WebSocket.OPEN) return false
+
+    const sequence = encodeSgrWheel(term, container, event, steps < 0 ? 64 : 65)
+    const payload = sequence.repeat(Math.min(Math.abs(steps), 20))
+    try {
+      socket.send(new TextEncoder().encode(payload))
+    } catch {
+      setPtyState('reconnecting')
+    }
+    handledWheelEventsRef.current.add(event)
+    event.preventDefault()
+    event.stopPropagation()
+    return false
+  }, [encodeSgrWheel, resolveWheelSteps])
 
   const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current !== null) {
@@ -151,6 +202,8 @@ export function useTerminal(
     terminalGenerationRef.current++
     socketGenerationRef.current++
     followOutputRef.current = true
+    wheelPartialScrollRef.current = 0
+    handledWheelEventsRef.current = new WeakSet<WheelEvent>()
     reconnectAttemptsRef.current = 0
   }, [clearReconnectTimer, closeSocket, disposeSearch])
 
@@ -299,6 +352,14 @@ export function useTerminal(
     termRef.current = term
     fitAddonRef.current = fitAddon
     term.open(container)
+
+    term.attachCustomWheelEventHandler(event => forwardWheelToTmux(term, container, event))
+
+    const captureWheel = (event: WheelEvent) => {
+      forwardWheelToTmux(term, container, event)
+    }
+    container.addEventListener('wheel', captureWheel, { capture: true, passive: false })
+    domCleanupRef.current.push(() => container.removeEventListener('wheel', captureWheel, true))
 
     const doFit = () => {
       if (
@@ -513,6 +574,9 @@ export function useTerminal(
     prefs.theme,
     sessionName,
     targetKey,
+    encodeSgrWheel,
+    forwardWheelToTmux,
+    resolveWheelSteps,
     writeClipboard,
   ])
 
