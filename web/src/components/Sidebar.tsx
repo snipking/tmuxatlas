@@ -20,6 +20,7 @@ interface SidebarProps {
   canKillSession?: boolean
   onKillSession?: (target: string) => void | Promise<void>
   onSessionRenamed?: (oldKey: string, newKey: string) => void
+  onWindowSelect?: (sessionKey: string, windowIndex: number) => void | Promise<void>
   onRuntimeError?: (message: string) => void
   mobileOpen?: boolean
   onMobileClose?: () => void
@@ -57,6 +58,7 @@ export function Sidebar({
   canKillSession = false,
   onKillSession,
   onSessionRenamed,
+  onWindowSelect,
   onRuntimeError,
   mobileOpen = false,
   onMobileClose,
