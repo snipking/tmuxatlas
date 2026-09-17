@@ -347,7 +347,25 @@ export function Sidebar({
               <span aria-hidden="true">{expandedWindows.has(session.key) ? '▾' : '▸'}</span>
             </button>
           )}
-        </div>
+          {expandedWindows.has(session.key) && !collapsed && session.source.windows.length > 0 && (
+            <ul className="ml-3 border-l border-sidebar-border pl-1 space-y-0.5">
+              {session.source.windows.map(window => (
+                <li key={window.id}>
+                  <button
+                    type="button"
+                    aria-label={`Window ${window.index}: ${window.name}, ${window.active ? 'active' : 'inactive'}`}
+                    onClick={() => onWindowSelect?.(session.key, window.index)}
+                    className={cn(
+                      'block w-full rounded px-2 py-0.5 text-left text-[11px] leading-6 hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                      window.active ? 'text-primary font-medium' : 'text-muted-foreground',
+                    )}
+                  >
+                    {window.index}{'·'} {window.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
       </li>
     )
   }
