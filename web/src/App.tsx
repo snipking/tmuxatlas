@@ -565,6 +565,9 @@ function AppInner({ onLogout, pwaInstall }: { onLogout?: () => void; pwaInstall:
               }
             }}
             onRuntimeError={setRuntimeError}
+            onWindowSelect={(sessionKey: string, windowIndex: number) => {
+              void jumpToSession(sessionKey, windowIndex)
+            }}
             mobileOpen={mobileSidebarOpen}
             onMobileClose={() => setMobileSidebarOpen(false)}
           />
