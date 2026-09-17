@@ -68,6 +68,7 @@ export function Sidebar({
   const [expandedHosts, setExpandedHosts] = useState<Set<string>>(
     () => new Set(workspace.hosts.map(host => host.id)),
   )
+  const [expandedWindows, setExpandedWindows] = useState<Set<string>>(new Set())
   const knownHostsRef = useRef(new Set(workspace.hosts.map(host => host.id)))
   const [renaming, setRenaming] = useState<WorkspaceSession | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -325,6 +326,25 @@ export function Sidebar({
               className="mr-0.5 grid h-9 w-8 shrink-0 place-items-center self-center rounded text-muted-foreground opacity-70 hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
             >
               <span aria-hidden="true">{pinnedSet.has(session.key) ? '★' : '☆'}</span>
+            </button>
+          )}
+          {!collapsed && session.source.windows.length > 0 && (
+            <button
+              type="button"
+              aria-label={expandedWindows.has(session.key) ? `Hide windows for ${session.name}` : `Show windows for ${session.name}`}
+              aria-expanded={expandedWindows.has(session.key)}
+              onClick={event => {
+                event.stopPropagation()
+                setExpandedWindows(previous => {
+                  const next = new Set(previous)
+                  if (next.has(session.key)) next.delete(session.key)
+                  else next.add(session.key)
+                  return next
+                })
+              }}
+              className="mr-0.5 grid h-9 w-8 shrink-0 place-items-center self-center rounded text-muted-foreground opacity-70 hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+            >
+              <span aria-hidden="true">{expandedWindows.has(session.key) ? '▾' : '▸'}</span>
             </button>
           )}
         </div>
