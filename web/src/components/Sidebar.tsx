@@ -347,6 +347,7 @@ export function Sidebar({
               <span aria-hidden="true">{expandedWindows.has(session.key) ? '▾' : '▸'}</span>
             </button>
           )}
+        </div>
           {expandedWindows.has(session.key) && !collapsed && session.source.windows.length > 0 && (
             <ul className="ml-3 border-l border-sidebar-border pl-1 space-y-0.5">
               {session.source.windows.map(window => (
