@@ -63,6 +63,16 @@ func (executor tmuxRuntimeExecutor) Execute(_ context.Context, operation string,
 			return nil, err
 		}
 		return json.RawMessage(`{"ok":true}`), nil
+	case "new-window":
+		index, err := executor.client.NewWindow(target.Session)
+		if err != nil {
+			return nil, err
+		}
+		result, _ := json.Marshal(map[string]any{
+			"target": target,
+			"window": index,
+		})
+		return result, nil
 	default:
 		return nil, fmt.Errorf("unsupported operation")
 	}
