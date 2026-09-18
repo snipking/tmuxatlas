@@ -1,5 +1,6 @@
 import type { MouseEventHandler, ReactNode } from 'react'
 import type { TerminalWorkspaceConnectionState } from '../state/terminalConnection'
+import { Tooltip } from './ui'
 
 interface TerminalCockpitProps {
   hostLabel: string
@@ -21,6 +22,9 @@ interface TerminalCockpitProps {
   onToggleFullscreen?: () => void
   onToggleZen?: () => void
   onMore: (button: HTMLButtonElement) => void
+  selectionMode: boolean
+  shiftHeld: boolean
+  onToggleSelectionMode: () => void
 }
 
 const connectionLabels: Record<TerminalWorkspaceConnectionState, string> = {
@@ -55,6 +59,9 @@ export function TerminalCockpit({
   onToggleFullscreen,
   onToggleZen,
   onMore,
+  selectionMode,
+  shiftHeld,
+  onToggleSelectionMode,
 }: TerminalCockpitProps) {
   const connectionClass = connectionState === 'connected'
     ? 'text-success'
@@ -63,6 +70,8 @@ export function TerminalCockpit({
       : connectionState === 'agent-offline' || connectionState === 'session-ended' || connectionState === 'auth-required'
         ? 'text-destructive'
         : 'text-muted-foreground'
+
+  const mouseMode = !selectionMode && !shiftHeld
 
   return (
     <div className="terminal-cockpit flex shrink-0 flex-col border-b border-border bg-card font-mono text-xs md:min-h-10 md:flex-row md:items-center md:gap-2 md:px-2">
@@ -90,6 +99,15 @@ export function TerminalCockpit({
           </CockpitButton>
         )}
         <CockpitButton label="Search Terminal" onClick={onSearch}>Find</CockpitButton>
+        <Tooltip content={<>{mouseMode ? 'Selection mode' : 'Mouse mode'}<br /><span className="text-muted-foreground">{mouseMode ? 'Hold \u21e7 to select text' : 'Click to restore'}</span></>}>
+          <CockpitButton
+            label={mouseMode ? 'Selection mode \u00b7 Hold Shift to select text' : 'Mouse mode \u00b7 Click to restore'}
+            highlighted={!mouseMode}
+            onClick={onToggleSelectionMode}
+          >
+            Sel
+          </CockpitButton>
+        </Tooltip>
         <CockpitButton label="Copy Terminal selection" disabled={!canCopy} onClick={onCopy}>Copy</CockpitButton>
         <CockpitButton label="Paste into Terminal" disabled={!canPaste} onClick={onPaste}>Paste</CockpitButton>
         <CockpitButton label="Decrease Terminal font size" onClick={() => onFontSize(-1)}>A−</CockpitButton>
@@ -124,11 +142,13 @@ export function TerminalCockpit({
 function CockpitButton({
   label,
   disabled,
+  highlighted,
   onClick,
   children,
 }: {
   label: string
   disabled?: boolean
+  highlighted?: boolean
   onClick: MouseEventHandler<HTMLButtonElement>
   children: ReactNode
 }) {
@@ -137,8 +157,9 @@ function CockpitButton({
       type="button"
       aria-label={label}
       disabled={disabled}
+      data-active={highlighted || undefined}
       onClick={onClick}
-      className="min-h-11 shrink-0 rounded border border-border px-2 text-muted-foreground hover:text-foreground disabled:opacity-40 md:min-h-8"
+      className="min-h-11 shrink-0 rounded border border-border px-2 text-muted-foreground hover:text-foreground disabled:opacity-40 data-[active=true]:border-primary data-[active=true]:text-primary md:min-h-8"
     >
       {children}
     </button>
