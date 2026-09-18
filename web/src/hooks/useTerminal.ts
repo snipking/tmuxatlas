@@ -141,6 +141,10 @@ export function useTerminal(
   const forwardWheelToTmux = useCallback((term: Terminal, container: HTMLElement, event: WheelEvent) => {
     if (handledWheelEventsRef.current.has(event)) return false
 
+    // When mouse tracking is off (selection mode), let xterm scroll locally
+    if (term.modes.mouseTrackingMode === 'none') return false
+
+
     const steps = resolveWheelSteps(term, event)
     const socket = wsRef.current
     if (steps === 0 || !socket || socket.readyState !== WebSocket.OPEN) return false
