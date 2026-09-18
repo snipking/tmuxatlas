@@ -435,19 +435,15 @@ export function Terminal({
     return () => window.clearTimeout(timer)
   }, [fit, focus, fullscreen, zenMode])
 
-  const onToggleSelectionMode = useCallback(async () => {
-    const next = !selectionMode
-    setSelectionMode(next)
-    try {
-      await postRuntimeMutation('/api/session/mouse', {
-        host_id: hostId,
-        session: sessionName,
-        mouse: next ? 'off' : 'on',
-      })
-    } catch (err) {
+  const onToggleSelectionMode = useCallback(() => {
+    setSelectionMode(current => !current)
+    postRuntimeMutation('/api/session/mouse', {
+      host_id: hostId,
+      session: sessionName,
+      mouse: selectionMode ? 'on' : 'off',
+    }).catch(err => {
       console.error('Failed to toggle mouse mode:', err)
-      setSelectionMode(!next)
-    }
+    })
   }, [hostId, sessionName, selectionMode])
 
   const showMenuAtButton = (button: HTMLButtonElement) => {

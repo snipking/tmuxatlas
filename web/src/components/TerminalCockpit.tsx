@@ -1,6 +1,5 @@
 import type { MouseEventHandler, ReactNode } from 'react'
 import type { TerminalWorkspaceConnectionState } from '../state/terminalConnection'
-import { Tooltip } from './ui'
 
 interface TerminalCockpitProps {
   hostLabel: string
@@ -99,15 +98,14 @@ export function TerminalCockpit({
           </CockpitButton>
         )}
         <CockpitButton label="Search Terminal" onClick={onSearch}>Find</CockpitButton>
-        <Tooltip content={<>{mouseMode ? 'Selection mode' : 'Mouse mode'}<br /><span className="text-muted-foreground">{mouseMode ? 'Hold \u21e7 to select text' : 'Click to restore'}</span></>}>
-          <CockpitButton
+        <CockpitButton
             label={mouseMode ? 'Selection mode \u00b7 Hold Shift to select text' : 'Mouse mode \u00b7 Click to restore'}
             highlighted={!mouseMode}
             onClick={onToggleSelectionMode}
+            title={mouseMode ? 'Hold \u21e7 to select text' : 'Click to restore mouse'}
           >
             Sel
           </CockpitButton>
-        </Tooltip>
         <CockpitButton label="Copy Terminal selection" disabled={!canCopy} onClick={onCopy}>Copy</CockpitButton>
         <CockpitButton label="Paste into Terminal" disabled={!canPaste} onClick={onPaste}>Paste</CockpitButton>
         <CockpitButton label="Decrease Terminal font size" onClick={() => onFontSize(-1)}>A−</CockpitButton>
@@ -145,12 +143,14 @@ function CockpitButton({
   highlighted,
   onClick,
   children,
+  title,
 }: {
   label: string
   disabled?: boolean
   highlighted?: boolean
   onClick: MouseEventHandler<HTMLButtonElement>
   children: ReactNode
+  title?: string
 }) {
   return (
     <button
@@ -159,7 +159,12 @@ function CockpitButton({
       disabled={disabled}
       data-active={highlighted || undefined}
       onClick={onClick}
-      className="min-h-11 shrink-0 rounded border border-border px-2 text-muted-foreground hover:text-foreground disabled:opacity-40 data-[active=true]:border-primary data-[active=true]:text-primary md:min-h-8"
+      title={title}
+      className={`min-h-11 shrink-0 rounded border px-2 md:min-h-8 ${
+        highlighted
+          ? 'border-primary text-primary'
+          : 'border-border text-muted-foreground'
+      } hover:text-foreground disabled:opacity-40`}
     >
       {children}
     </button>
