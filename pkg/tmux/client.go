@@ -238,6 +238,21 @@ func (c *Client) NewSession(name string) error {
 	return err
 }
 
+// NewWindow creates a new window in the given session. The new window
+// becomes the session's current window (no -d flag) and inherits tmux
+// auto-naming.
+func (c *Client) NewWindow(sessionName string) (int, error) {
+	out, err := c.Exec("new-window", "-P", "-F", "#{window_index}", "-t", sessionName)
+	if err != nil {
+		return 0, err
+	}
+	index, err := strconv.Atoi(strings.TrimSpace(out))
+	if err != nil {
+		return 0, fmt.Errorf("parse window index from %q: %w", out, err)
+	}
+	return index, nil
+}
+
 // RenameSession renames a tmux session
 func (c *Client) RenameSession(oldName, newName string) error {
 	_, err := c.Exec("rename-session", "-t", oldName, newName)
