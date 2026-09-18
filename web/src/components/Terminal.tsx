@@ -14,6 +14,7 @@ import {
   type ModifierState,
 } from '../lib/mobileTerminalInput'
 import { terminalTargetKey } from '../lib/terminalInput'
+import { postRuntimeMutation } from '../lib/runtimeApi'
 import type { ConnectionState } from '../state/types'
 import {
   deriveTerminalWorkspaceConnection,
@@ -101,6 +102,8 @@ export function Terminal({
   const [contextMenu, setContextMenu] = useState<TerminalMenuPosition | null>(null)
   const [pendingPaste, setPendingPaste] = useState<PendingTerminalPaste | null>(null)
   const [pasteError, setPasteError] = useState('')
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [shiftHeld, setShiftHeld] = useState(false)
   const {
     connect,
     disconnect,
@@ -136,6 +139,26 @@ export function Terminal({
   const canPaste = workspaceConnection === 'connected' && Boolean(navigator.clipboard?.readText)
 
   useEffect(() => input.subscribe(setModifiers), [input])
+
+  useEffect(() => {
+    const onKeyEvent = (e: KeyboardEvent) => {
+      if (e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') {
+        setShiftHeld(e.type === 'keydown' ? (e.shiftKey || e.altKey || e.metaKey) : false)
+      }
+    }
+    const onMouseUp = (e: MouseEvent) => {
+      if (!e.shiftKey && !e.altKey && !e.metaKey) setShiftHeld(false)
+    }
+    document.addEventListener('keydown', onKeyEvent)
+    document.addEventListener('keyup', onKeyEvent)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.removeEventListener('keydown', onKeyEvent)
+      document.removeEventListener('keyup', onKeyEvent)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
   useEffect(() => {
     input.reset()
     setToolbarError('')
@@ -145,6 +168,8 @@ export function Terminal({
     setContextMenu(null)
     setSearchOpen(false)
     clearSearch()
+    setSelectionMode(false)
+    setShiftHeld(false)
   }, [clearSearch, hostId, input, sessionName])
 
   const cycleModifier = (modifier: ModifierName) => {
@@ -410,6 +435,21 @@ export function Terminal({
     return () => window.clearTimeout(timer)
   }, [fit, focus, fullscreen, zenMode])
 
+  const onToggleSelectionMode = useCallback(async () => {
+    const next = !selectionMode
+    setSelectionMode(next)
+    try {
+      await postRuntimeMutation('/api/session/mouse', {
+        host_id: hostId,
+        session: sessionName,
+        mouse: next ? 'off' : 'on',
+      })
+    } catch (err) {
+      console.error('Failed to toggle mouse mode:', err)
+      setSelectionMode(!next)
+    }
+  }, [hostId, sessionName, selectionMode])
+
   const showMenuAtButton = (button: HTMLButtonElement) => {
     const rect = button.getBoundingClientRect()
     setContextMenu({ x: rect.right - 160, y: rect.bottom + 4 })
@@ -438,6 +478,9 @@ export function Terminal({
           onToggleFullscreen={onToggleFullscreen}
           onToggleZen={onToggleZen}
           onMore={showMenuAtButton}
+          selectionMode={selectionMode}
+          shiftHeld={shiftHeld}
+          onToggleSelectionMode={onToggleSelectionMode}
         />
       )}
       {zenMode && onToggleZen && (
