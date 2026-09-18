@@ -263,3 +263,13 @@ func (c *Client) RenameSession(oldName, newName string) error {
 func (c *Client) CapturePaneContent(paneID string) (string, error) {
 	return c.Exec("capture-pane", "-t", paneID, "-p")
 }
+
+// SetMouse enables or disables mouse support for the given session.
+func (c *Client) SetMouse(sessionName string, on bool) error {
+	value := "off"
+	if on {
+		value = "on"
+	}
+	_, err := c.Exec("set-option", "-t", sessionName, "mouse", value)
+	return err
+}
