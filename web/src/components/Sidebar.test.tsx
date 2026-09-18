@@ -285,4 +285,54 @@ describe('state-driven Sidebar', () => {
     expect(screen.queryByRole('button', { name: /Window 0:/ })).not.toBeInTheDocument()
   })
 
+
+  it('calls onNewWindow when "+" button is clicked', async () => {
+    const onNewWindow = vi.fn().mockResolvedValue(undefined)
+    const ws = buildWorkspaceViewModel(
+      [{ ...session('host-a', 'work'), windows: windowsForSession() }],
+      [], new Map(), hosts.slice(0, 1),
+    )
+    renderSidebar({ workspace: ws, onNewWindow })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Create new window in work' }))
+    expect(onNewWindow).toHaveBeenCalledWith('host-a/work')
+  })
+
+  it('shows "New Window" in right-click context menu when onNewWindow provided', async () => {
+    const onNewWindow = vi.fn().mockResolvedValue(undefined)
+    const ws = buildWorkspaceViewModel(
+      [{ ...session('host-a', 'work'), windows: windowsForSession() }],
+      [], new Map(), hosts.slice(0, 1),
+    )
+    renderSidebar({ workspace: ws, onNewWindow })
+
+    const sessionButton = screen.getByRole('button', { name: /Open Duplicate Host session work/ })
+    fireEvent.contextMenu(sessionButton)
+    const menuItem = screen.getByRole('menuitem', { name: 'New Window' })
+    expect(menuItem).toBeInTheDocument()
+    await userEvent.click(menuItem)
+    expect(onNewWindow).toHaveBeenCalledWith('host-a/work')
+  })
+
+  it('hides "+" button when sidebar is collapsed', () => {
+    const onNewWindow = vi.fn().mockResolvedValue(undefined)
+    const ws = buildWorkspaceViewModel(
+      [{ ...session('host-a', 'work'), windows: windowsForSession() }],
+      [], new Map(), hosts.slice(0, 1),
+    )
+    renderSidebar({ workspace: ws, collapsed: true, onNewWindow })
+
+    expect(screen.queryByRole('button', { name: 'Create new window in work' })).not.toBeInTheDocument()
+  })
+
+  it('does not show "+" button when onNewWindow prop is omitted', () => {
+    const ws = buildWorkspaceViewModel(
+      [{ ...session('host-a', 'work'), windows: windowsForSession() }],
+      [], new Map(), hosts.slice(0, 1),
+    )
+    renderSidebar({ workspace: ws })
+
+    expect(screen.queryByRole('button', { name: 'Create new window in work' })).not.toBeInTheDocument()
+  })
+
 })
