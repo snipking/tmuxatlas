@@ -21,6 +21,7 @@ interface SidebarProps {
   onKillSession?: (target: string) => void | Promise<void>
   onSessionRenamed?: (oldKey: string, newKey: string) => void
   onWindowSelect?: (sessionKey: string, windowIndex: number) => void | Promise<void>
+  onNewWindow?: (sessionKey: string) => Promise<void>
   onRuntimeError?: (message: string) => void
   mobileOpen?: boolean
   onMobileClose?: () => void
@@ -59,6 +60,7 @@ export function Sidebar({
   onKillSession,
   onSessionRenamed,
   onWindowSelect,
+  onNewWindow,
   onRuntimeError,
   mobileOpen = false,
   onMobileClose,
@@ -328,6 +330,20 @@ export function Sidebar({
               <span aria-hidden="true">{pinnedSet.has(session.key) ? '★' : '☆'}</span>
             </button>
           )}
+          {!collapsed && onNewWindow && (
+            <button
+              type="button"
+              aria-label={`Create new window in ${session.name}`}
+              onClick={event => {
+                event.stopPropagation()
+                void onNewWindow(session.key)
+              }}
+              title="New window"
+              className="mr-0.5 grid h-9 w-8 shrink-0 place-items-center self-center rounded text-muted-foreground opacity-70 hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100"
+            >
+              <span aria-hidden="true">+</span>
+            </button>
+          )}
           {!collapsed && session.source.windows.length > 0 && (
             <button
               type="button"
@@ -490,6 +506,14 @@ export function Sidebar({
             style={{ left: Math.min(contextMenu.x, window.innerWidth - 240), top: Math.min(contextMenu.y, window.innerHeight - 280) }}
           >
             <button role="menuitem" type="button" onClick={() => startRename(contextMenu.session)} className="flex h-10 w-full items-center rounded px-3 text-left hover:bg-accent focus:bg-accent focus:outline-none">Rename</button>
+            {onNewWindow && (
+              <button role="menuitem" type="button" onClick={() => {
+                void onNewWindow(contextMenu.session.key)
+                setContextMenu(null)
+              }} className="flex h-10 w-full items-center rounded px-3 text-left hover:bg-accent focus:bg-accent focus:outline-none">
+                New Window
+              </button>
+            )}
             <button role="menuitem" type="button" onClick={() => { onTogglePin(contextMenu.session.key); setContextMenu(null) }} className="flex h-10 w-full items-center rounded px-3 text-left hover:bg-accent focus:bg-accent focus:outline-none">{pinnedSet.has(contextMenu.session.key) ? 'Unpin' : 'Pin'}</button>
             <div role="separator" className="my-1 h-px bg-border" />
             <button role="menuitem" type="button" onClick={() => runDetach(contextMenu.session.key)} className="flex h-10 w-full items-center rounded px-3 text-left hover:bg-accent focus:bg-accent focus:outline-none">Detach browser client (tmux keeps running)</button>
