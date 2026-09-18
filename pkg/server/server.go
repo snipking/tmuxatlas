@@ -400,6 +400,11 @@ func Run(ctx context.Context, opts *Options) error {
 				handleSessionNewWindow(w, r, actionRouter, opts)
 			})
 
+
+			mutations.With(httpguard.BodyReadDeadline(10*time.Second), httpguard.JSONBody(httpguard.SmallJSONLimit)).Post("/session/mouse", func(w http.ResponseWriter, r *http.Request) {
+				handleSessionMouse(w, r, actionRouter)
+			})
+
 			mutations.With(httpguard.BodyReadDeadline(10*time.Second), httpguard.JSONBody(httpguard.SmallJSONLimit)).Post("/session/select-pane", func(w http.ResponseWriter, r *http.Request) {
 				handleSessionSelectPane(w, r, actionRouter)
 			})
